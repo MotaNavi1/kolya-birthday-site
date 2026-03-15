@@ -1,212 +1,387 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>С Днём Рождения, Коля! 🎉</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        
+
         body {
-            font-family: 'Press Start 2P', system-ui;
-            background: #0a0015;
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(to bottom, #0f001a, #1a0033);
             color: white;
             margin: 0;
+            overflow: hidden;
+            height: 100vh;
         }
-        
-        .neon-text {
+
+        .neon {
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #00ffff;
         }
-        
-        .section {
-            min-height: 100vh;
-            scroll-snap-align: start;
+
+        .part {
+            position: absolute;
+            inset: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 2rem;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
         }
-        
+
+        .part.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         #slideshow img {
             max-height: 60vh;
-            border: 6px solid #ff00ff;
+            border: 5px solid #ff00ff;
             border-radius: 1.5rem;
-            box-shadow: 0 0 40px #ff00ff80;
-            transition: opacity 1s ease-in-out;
+            box-shadow: 0 0 50px #ff00ff80;
+            transition: opacity 1.2s;
         }
-        
-        .nav-dots {
-            position: fixed;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            display: flex;
-            gap: 0.75rem;
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            max-width: 500px;
         }
-        
-        .nav-dots button {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            transition: all 0.3s;
+
+        .card {
+            width: 100px;
+            height: 100px;
+            background: #333;
+            border-radius: 1rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            transition: transform 0.3s, background 0.3s;
         }
-        
-        .nav-dots button.active {
+
+        .card.flipped {
+            transform: rotateY(180deg);
             background: #00ffff;
-            box-shadow: 0 0 15px #00ffff;
-            transform: scale(1.3);
         }
-        
-        .video-wrapper {
+
+        .card.matched {
+            background: #22c55e;
+            cursor: default;
+        }
+
+        #catchBtn {
+            position: absolute;
+            padding: 1.5rem 3rem;
+            font-size: 1.8rem;
+            border-radius: 999px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 0 30px #00ffff;
+        }
+
+        .simon-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.4s, transform 0.2s;
+        }
+
+        .simon-btn.active { opacity: 1; transform: scale(1.15); }
+
+        .red    { background: #ef4444; }
+        .green  { background: #22c55e; }
+        .blue   { background: #3b82f6; }
+        .yellow { background: #eab308; }
+
+        iframe {
             width: 90%;
             max-width: 960px;
-            aspect-ratio: 16 / 9;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 0 60px rgba(0,255,255,0.4);
-            background: black;
-        }
-        
-        iframe {
-            width: 100%;
-            height: 100%;
+            height: 540px;
             border: none;
+            border-radius: 1.5rem;
+            box-shadow: 0 0 80px #00ffff80;
         }
     </style>
 </head>
-<body class="snap-y snap-mandatory overflow-y-scroll h-screen">
+<body>
 
-    <!-- Точки навигации -->
-    <div class="nav-dots">
-        <button onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})" class="active"></button>
-        <button onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth'})"></button>
-        <button onclick="document.getElementById('s3').scrollIntoView({behavior:'smooth'})"></button>
-        <button onclick="document.getElementById('s4').scrollIntoView({behavior:'smooth'})"></button>
+<div id="p1" class="part active">
+    <h1 class="text-7xl md:text-9xl neon mb-8">С ДНЁМ РОЖДЕНИЯ,<br>КОЛЯ! 🥳</h1>
+    <p class="text-4xl text-cyan-300">Ну что, вспомним тебя в прошлом?</p>
+    <div id="slideshow" class="mt-12 hidden">
+        <img id="currentImg" src="" alt="">
+        <p id="counter" class="mt-6 text-2xl text-pink-400">1 / ?</p>
+    </div>
+</div>
+
+<div id="p2" class="part">
+    <h1 class="text-6xl neon mb-10">ТЕСТ НА IQ<br>ПРОЙДЁШЬ ЛИ?</h1>
+    <div id="memoryGame" class="hidden">
+        <h2 class="text-3xl mb-6">Задание 1: Memory — найди все пары</h2>
+        <div class="memory-grid" id="memoryGrid"></div>
+        <p class="mt-6 text-xl">Осталось пар: <span id="pairsLeft">6</span></p>
     </div>
 
-    <!-- 1. Поздравление + воспоминания (фото) -->
-    <section id="s1" class="section bg-gradient-to-br from-purple-950 via-black to-cyan-950">
-        <div class="w-full max-w-4xl">
-            <h1 class="text-6xl md:text-8xl font-bold neon-text mb-8 leading-tight">
-                С ДНЁМ РОЖДЕНИЯ,<br>КОЛЯ! 🎉
-            </h1>
-            <p class="text-3xl text-cyan-300 mb-12">Ну что, вспомним тебя в прошлом?</p>
-            
-            <div id="slideshow" class="mx-auto">
-                <img id="currentPhoto" src="" alt="Воспоминание">
-            </div>
-            <p id="photoCounter" class="mt-6 text-pink-400 text-xl">1 / ?</p>
+    <div id="catchGame" class="hidden relative w-full h-96">
+        <h2 class="text-3xl mb-6">Задание 2: Поймай убегающую кнопку!</h2>
+        <button id="catchBtn">Лови меня!</button>
+    </div>
+
+    <div id="simonGame" class="hidden">
+        <h2 class="text-3xl mb-6">Задание 3: Повтори последовательность</h2>
+        <div class="flex justify-center flex-wrap">
+            <button class="simon-btn red"   data-color="red"></button>
+            <button class="simon-btn green" data-color="green"></button>
+            <button class="simon-btn blue"  data-color="blue"></button>
+            <button class="simon-btn yellow"data-color="yellow"></button>
         </div>
-    </section>
+        <p class="mt-8 text-xl">Твой ход после демонстрации</p>
+        <button id="startSimon" class="mt-6 px-10 py-4 bg-purple-600 rounded-xl text-2xl">Начать</button>
+    </div>
+</div>
 
-    <!-- 2. Тест на IQ (мини-задания) -->
-    <section id="s2" class="section bg-gradient-to-b from-black to-purple-950">
-        <div class="max-w-4xl w-full">
-            <h1 class="text-6xl neon-text mb-10">ТЕСТ НА IQ<br>ПРОЙДЁШЬ ЛИ?</h1>
-            <p class="text-2xl text-cyan-200 mb-12">3 лёгких задания ниже ↓</p>
-            
-            <!-- Здесь вставь свои 3 мини-игры (кнопки, ловилка и т.д.) -->
-            <!-- Пример заглушки: -->
-            <div class="space-y-8">
-                <button class="bg-pink-600 hover:bg-pink-500 text-white text-2xl px-12 py-6 rounded-2xl w-full max-w-md mx-auto block"
-                        onclick="alert('Задание 1 пройдено! Далее ↓')">
-                    Найди правильную кнопку (нажми меня)
-                </button>
-                <p class="text-xl">...добавь ещё 2 задания...</p>
-            </div>
-        </div>
-    </section>
+<div id="p3" class="part">
+    <h1 class="text-7xl neon mb-12">РАССЛАБЬСЯ И СМОТРИ 🥱</h1>
+    <iframe 
+        src="https://www.youtube.com/embed/y1F5NJgLLt0?rel=0&modestbranding=1&controls=1&autoplay=0" 
+        allowfullscreen>
+    </iframe>
+</div>
 
-    <!-- 3. Видео -->
-    <section id="s3" class="section bg-black">
-        <div class="w-full max-w-5xl">
-            <h1 class="text-6xl neon-text mb-12">РАССЛАБЬСЯ И СМОТРИ 🥱</h1>
-            
-            <div class="video-wrapper mx-auto">
-                <iframe 
-                    src="https://www.youtube.com/embed/y1F5NJgLLt0?rel=0&modestbranding=1&showinfo=0&controls=1&autoplay=0" 
-                    title="Поздравление Коле" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
-            </div>
-        </div>
-    </section>
+<div id="p4" class="part">
+    <h1 class="text-6xl md:text-8xl neon mb-8 animate-pulse">
+        ЕЩЁ РАЗ С ДНЁМ РОЖДЕНИЯ,<br>КОЛЯ 🫡
+    </h1>
+    <p class="text-5xl text-yellow-300 tracking-widest animate-bounce">
+        КОГДА МИНИ-ИГРЫ, КОЛЯ? 😏
+    </p>
+</div>
 
-    <!-- 4. Финал -->
-    <section id="s4" class="section bg-black">
-        <div>
-            <h1 class="text-6xl md:text-8xl font-bold bg-gradient-to-r from-pink-500 to-cyan-400 bg-clip-text text-transparent mb-8">
-                ЕЩЁ РАЗ С ДНЁМ РОЖДЕНИЯ,<br>КОЛЯ 🫡
-            </h1>
-            <p class="text-4xl text-yellow-300 tracking-widest animate-pulse">
-                КОГДА МИНИ-ИГРЫ, КОЛЯ? 😏
-            </p>
-        </div>
-    </section>
+<script>
+    // --------------------- HELPERS ---------------------
+    function showPart(id) {
+        document.querySelectorAll('.part').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        confetti({ particleCount: 120, spread: 90 });
+    }
 
-    <script>
-        // Фото-слайдшоу
-        const photos = [
-            'photos/1.jpg',
-            'photos/2.jpg',
-            'photos/3.jpg',
-            'photos/4.jpg',
-            // добавь все свои фото сюда, например 'photos/meme.jpg',
-        ];
-        let current = 0;
-        const photoEl = document.getElementById('currentPhoto');
-        const counterEl = document.getElementById('photoCounter');
+    function nextPart(delay = 1500) {
+        setTimeout(() => {
+            const current = document.querySelector('.part.active');
+            const nextId = 'p' + (parseInt(current.id.slice(1)) + 1);
+            showPart(nextId);
+        }, delay);
+    }
 
-        if (photos.length > 0) {
-            photoEl.src = photos[0];
-            counterEl.textContent = `1 / ${photos.length}`;
-            
-            setInterval(() => {
-                current = (current + 1) % photos.length;
-                photoEl.style.opacity = '0';
-                setTimeout(() => {
-                    photoEl.src = photos[current];
-                    photoEl.style.opacity = '1';
-                    counterEl.textContent = `${current + 1} / ${photos.length}`;
-                }, 800);
-            }, 3500); // меняется каждые 3.5 секунды
-        }
+    // --------------------- PART 1: Slideshow ---------------------
+    const photos = [
+        'photos/1.jpg', 'photos/2.jpg', 'photos/3.jpg', 'photos/4.jpg', 'photos/5.jpg',
+        // добавь все свои фото сюда
+    ];
 
-        // Конфетти в фоне (иногда)
-        setInterval(() => {
-            if (window.scrollY < window.innerHeight * 2) {
-                confetti({
-                    particleCount: 80,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+    let photoIdx = 0;
+    const imgEl = document.getElementById('currentImg');
+    const cntEl = document.getElementById('counter');
+    const slideshow = document.getElementById('slideshow');
+
+    function startSlideshow() {
+        slideshow.classList.remove('hidden');
+        imgEl.src = photos[0];
+        cntEl.textContent = `1 / ${photos.length}`;
+
+        const interval = setInterval(() => {
+            photoIdx++;
+            if (photoIdx >= photos.length) {
+                clearInterval(interval);
+                setTimeout(() => nextPart(2000), 1500);
+                return;
             }
-        }, 7000);
+            imgEl.style.opacity = '0';
+            setTimeout(() => {
+                imgEl.src = photos[photoIdx];
+                imgEl.style.opacity = '1';
+                cntEl.textContent = `${photoIdx + 1} / ${photos.length}`;
+            }, 600);
+        }, 3200);
+    }
 
-        // Подсветка активной точки при скролле
-        window.addEventListener('scroll', () => {
-            const sections = document.querySelectorAll('.section');
-            let currentSection = 1;
-            sections.forEach((sec, i) => {
-                if (window.scrollY >= sec.offsetTop - 100) {
-                    currentSection = i + 1;
-                }
-            });
-            document.querySelectorAll('.nav-dots button').forEach((btn, idx) => {
-                btn.classList.toggle('active', idx + 1 === currentSection);
-            });
+    // --------------------- PART 2: Games ---------------------
+    let gameStage = 1;
+
+    function startNextGame() {
+        document.querySelectorAll('#p2 > div').forEach(d => d.classList.add('hidden'));
+        if (gameStage === 1) document.getElementById('memoryGame').classList.remove('hidden');
+        if (gameStage === 2) document.getElementById('catchGame').classList.remove('hidden');
+        if (gameStage === 3) document.getElementById('simonGame').classList.remove('hidden');
+    }
+
+    // Game 1: Memory Match (6 пар)
+    const emojis = ['🎂','🎉','🎁','🥳','🎈','🍰','🎂','🎉','🎁','🥳','🎈','🍰'];
+    let flipped = [];
+    let matched = 0;
+
+    function initMemory() {
+        const grid = document.getElementById('memoryGrid');
+        grid.innerHTML = '';
+        const shuffled = emojis.sort(() => Math.random() - 0.5);
+
+        shuffled.forEach((em, i) => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.dataset.value = em;
+            card.innerHTML = '?';
+            card.onclick = () => flipCard(card);
+            grid.appendChild(card);
         });
-    </script>
+        document.getElementById('pairsLeft').textContent = '6';
+    }
+
+    function flipCard(card) {
+        if (flipped.length === 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+        card.classList.add('flipped');
+        card.innerHTML = card.dataset.value;
+        flipped.push(card);
+
+        if (flipped.length === 2) {
+            setTimeout(checkMatch, 800);
+        }
+    }
+
+    function checkMatch() {
+        if (flipped[0].dataset.value === flipped[1].dataset.value) {
+            flipped.forEach(c => c.classList.add('matched'));
+            matched++;
+            document.getElementById('pairsLeft').textContent = 6 - matched;
+            if (matched === 6) {
+                setTimeout(() => {
+                    alert('Память — огонь! Переходим к следующему');
+                    gameStage = 2;
+                    startNextGame();
+                }, 1000);
+            }
+        } else {
+            flipped.forEach(c => {
+                c.classList.remove('flipped');
+                c.innerHTML = '?';
+            });
+        }
+        flipped = [];
+    }
+
+    // Game 2: Catch button
+    const catchBtn = document.getElementById('catchBtn');
+    let catchInterval;
+
+    function startCatch() {
+        catchBtn.onclick = () => {
+            clearInterval(catchInterval);
+            alert('Поймал! Ты быстрый 🔥');
+            gameStage = 3;
+            startNextGame();
+        };
+
+        catchInterval = setInterval(() => {
+            const x = Math.random() * (window.innerWidth - 300) + 50;
+            const y = Math.random() * (window.innerHeight - 300) + 100;
+            catchBtn.style.left = x + 'px';
+            catchBtn.style.top  = y + 'px';
+        }, 900); // быстрее, чем раньше
+    }
+
+    // Game 3: Simon Says
+    const colors = ['red','green','blue','yellow'];
+    let sequence = [];
+    let playerSeq = [];
+    let level = 0;
+
+    document.querySelectorAll('.simon-btn').forEach(btn => {
+        btn.onclick = () => {
+            if (playerSeq.length >= sequence.length) return;
+            const col = btn.dataset.color;
+            playerSeq.push(col);
+            btn.style.opacity = '1';
+            setTimeout(() => btn.style.opacity = '0.7', 300);
+            checkSimon();
+        };
+    });
+
+    function playSequence() {
+        sequence.forEach((col, i) => {
+            setTimeout(() => {
+                const btn = document.querySelector(`[data-color="${col}"]`);
+                btn.style.opacity = '1';
+                setTimeout(() => btn.style.opacity = '0.7', 400);
+            }, i * 700);
+        });
+    }
+
+    function startSimonGame() {
+        level++;
+        sequence.push(colors[Math.floor(Math.random()*4)]);
+        playerSeq = [];
+        setTimeout(playSequence, 800);
+    }
+
+    function checkSimon() {
+        for (let i = 0; i < playerSeq.length; i++) {
+            if (playerSeq[i] !== sequence[i]) {
+                alert('Не-а, последовательность другая... Попробуй заново');
+                sequence = [];
+                level = 0;
+                startSimonGame();
+                return;
+            }
+        }
+        if (playerSeq.length === sequence.length) {
+            if (level >= 6) {  // пройдено после 6 уровней
+                alert('Гений! Тест на IQ пройден!');
+                nextPart(1500);
+            } else {
+                setTimeout(startSimonGame, 1200);
+            }
+        }
+    }
+
+    document.getElementById('startSimon').onclick = () => {
+        document.getElementById('startSimon').classList.add('hidden');
+        startSimonGame();
+    };
+
+    // --------------------- LAUNCH ---------------------
+    showPart('p1');
+    setTimeout(() => {
+        startSlideshow();
+    }, 3500);   // после приветствия ждём и запускаем фото
+
+    // Автозапуск игр после фото
+    setTimeout(() => {
+        if (document.getElementById('p2').classList.contains('active')) {
+            initMemory();
+            startNextGame();
+        }
+    }, photos.length * 3500 + 5000);  // примерно после окончания слайдшоу
+
+    // Запуск catch после memory (вызывается из memory)
+    // Запуск simon после catch (вызывается из catch)
+
+    // Конфетти в фоне
+    setInterval(() => confetti({particleCount:60, spread:80}), 9000);
+</script>
 </body>
 </html>
